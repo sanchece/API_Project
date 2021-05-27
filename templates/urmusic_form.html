@@ -1,0 +1,24 @@
+{%extends 'base.html'%}
+
+{%block title%}
+UrMusic Form
+{%endblock%}
+
+
+{%block content%}
+<div class="row justify-content-center ">
+    <div class="col-4 p-4 border rounded">
+        <form action="/get_tweets" method="POST"> 
+            <div class="form-group">
+              <label for="title">Twitter ID:</label>
+              <input type="text" class="form-control" name="twitter-id">
+            </div><p></p>
+          
+            <div class="row justify-content-center ">
+                <button type="submit" class="btn btn-primary">Get Ur Music</button>
+            </div>
+          </form>
+    </div>
+  </div>  
+
+{%endblock%}
