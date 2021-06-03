@@ -1,6 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
-
+from flask_bcrypt import Bcrypt
 db = SQLAlchemy()
+bcrypt=Bcrypt()
 def connect_db(app):
     """Connect to database."""
 
@@ -11,10 +12,24 @@ class User(db.Model):
     """users"""
     __tablename__="users"
     
-    UserID=db.Column(db.Integer,primary_key=True,autoincrement=True)
-    Name=db.Column(db.String,nullable=False)
-    Email=db.Column(db.String,nullable=False)
-    Twitter_handle=db.Column(db.String,nullable=False)
+    id=db.Column(db.Integer,primary_key=True,autoincrement=True)
+    username=db.Column(db.String,nullable=False)
+    password=db.Column(db.String,nullable=False)
+    email=db.Column(db.String,nullable=False)
+    twitter_handle=db.Column(db.String,nullable=False)
+
+    @classmethod
+    def signup(cls, username,email,password,twitter_handle):
+        bcrypted_pw= bcrypt.generate_password_hash(password).decode('UTF-8')
+        user=User(
+            username=username,
+            email=email,
+            password=bcrypted_pw,
+            twitter_handle=twitter_handle  
+        )
+        db.session.add(user)
+        return user
+
 
 class Playlist(db.Model):
     """playlist"""

@@ -1,180 +1,121 @@
-from flask import Flask,request
+from flask import Flask,request,session, g, redirect
 from flask.templating import render_template
-from models import db, connect_db
+from models import db, connect_db,User
 import requests
 import json
-from statistics import mean
-from google.cloud import language_v1
-import base64
+from forms import AddUser, LoginUser
+import os
 import requests
-# for spotify below
-clientId = ''
-clientSecret = ''
-# for twitter below
-twitter_bearer_token=""
+from twitter_helper import get_tweets,get_id
+from google_helper import google_sentiment_analysis,get_focus_sentiment
+from spotify_helper import get_playlist
+
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql:///urmusic'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ECHO'] = True
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', "it's a secret")
 
 connect_db(app)
-# db.drop_all()
-# db.create_all()
+db.drop_all()
+db.create_all()
 
+USER_KEY="current_user"
 
+@app.before_request
+def add_user_to_g():
+    if USER_KEY in session:
+        g.user=User.query.get(session[USER_KEY])
+    else:
+        g.user=None
 
+def login(user):
+    session[USER_KEY]=user.id
 
-
-
-# def google_sentiment_analysis(tweet):
-#     text=tweet
-#     client = language_v1.LanguageServiceClient()
-#     document = language_v1.Document(content=text, type_=language_v1.Document.Type.PLAIN_TEXT)
-#     sentiment = client.analyze_sentiment(request={'document': document}).document_sentiment
-#     return sentiment
-
-# def get_focus_sentiment(sentiments):
-#     # currently working on better algorithm to extract focus sentiment from extracted tweets
-#     focus_sentiment=mean(sentiments)
-#     return sentiments
-
-# def get_token_for_spotify():
-#     url="https://accounts.spotify.com/api/token"
-#     auth_str ='{}:{}'.format(clientId, clientSecret)
-
-#     headers={
-#         "Content-Type":"application/x-www-form-urlencoded",
-#         "Authorization":"Basic "+base64.urlsafe_b64encode(auth_str.encode()).decode(),
-#         }
-#     data={
-#         'grant_type': 'client_credentials'
-#         }
-
-#     result=requests.post(url,data=data, headers=headers)
-#     token=result.json()
-#     return token['access_token']
-
-# def get_random_song(playlist_id):
-#     token= get_token_for_spotify()
-#     params={"market":"US","limit":1}
-#     headers={
-#         "Authorization":"Bearer {}".format(token)
-#     }
-#     url=f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks"
-#     response= requests.request("GET",url,headers=headers,params=params)
-#     song=response.json()
-#     return song["items"][0]["track"]["id"]
-
-
-# def get_random_artist(playlist_id):
-#     token= get_token_for_spotify()
-
-#     params={"market":"US","limit":2}
-#     headers={
-#         "Authorization":"Bearer {}".format(token)
-#     }
-#     url=f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks"
-#     response= requests.request("GET",url,headers=headers,params=params)
-#     artist=response.json()
-#     return artist["items"][1]["track"]["artists"][0]["id"]
-
-
-# def get_random_genre(artist_seed):
-#     token= get_token_for_spotify()
-#     artist_id=artist_seed
-#     params={"ids":artist_id}
-#     headers={
-#         "Authorization":"Bearer {}".format(token)
-#     }
-#     url=f"https://api.spotify.com/v1/artists"
-#     response= requests.request("GET",url,headers=headers,params=params)
-#     genre=response.json()
-#     return genre["artists"][0]["genres"]
-
-# def get_starting_point_playlist(focus_sentiment):
-#     if focus_sentiment >= -1 and focus_sentiment<-0.7:
-#         return "7mCzIltN0jFQ54GH02HMsY"
-#     elif focus_sentiment>=-0.7 and focus_sentiment<-0.4:
-#         return "37i9dQZF1DX0XUsuxWHRQd"
-#     elif focus_sentiment>=-0.4 and focus_sentiment<0:
-#         return "4y3WX0SZQ2cTLBovftfyiP"
-#     elif focus_sentiment>=0 and focus_sentiment<.4:
-#         return "37i9dQZF1DWV7EzJMK2FUI"
-#     elif focus_sentiment>=.4 and focus_sentiment<0.7:
-#         return "7vI0tN3yUn07dkK9T6p2pg"
-#     elif focus_sentiment>=0.7 and focus_sentiment<=1:
-#         return "37i9dQZF1DXaqCgtv7ZR3L"
-
-# def get_recommended_music(playlist_id):
-#     token= get_token()
-#     track_seed=get_random_song(playlist_id)
-#     artist_seed=get_random_artist(playlist_id)
-#     genre_seed=get_random_genre(artist_seed)
-
-#     limit=1
-#     params={
-#         "limit":limit,
-#         "seed_artists":artist_seed,
-#         "seed_genres":genre_seed,
-#         "seed_tracks":track_seed,
-#         "market":"US"
-#         }
-#     headers={
-#         "Authorization":"Bearer {}".format(token)
-#     }
-#     url=f"https://api.spotify.com/v1/recommendations"
-#     response= requests.request("GET",url,headers=headers,params=params)
-#     recommended=response.json()
-#     return recommended['tracks'][0]['name']
-
-
-
-# def get_playlist(focus_sentiment):
-#     playlist=[]
-#     playlist_id=get_starting_point_playlist(focus_sentiment)
-#     return get_recommended_music(playlist_id)
-
+def logout():
+    if USER_KEY in session:
+        del session[USER_KEY]
 
 
 @app.route('/')
 def home():
-    return render_template("urmusic_form.html")
+    if not g.user:
+        return render_template("ur_music_home.html")
+    else:
+        user= User.query.get_or_404(session[USER_KEY])
+        
+        return redirect(f'/get_tweets/{user.twitter_handle}')
 
-@app.route('/get_tweets', methods=["POST"])
-def get_tweets():
-    user_id=request.form["twitter-id"]
+
+@app.route('/signup', methods=["GET","POST"])
+def signup():
+    form=AddUser()
+    if form.validate_on_submit():
+        # sign up
+        user=User.signup(
+            username=form.username.data,
+            email=form.email.data,
+            password=form.password.data,
+            twitter_handle=form.twitter_handle.data
+        )
+        db.session.commit()
+        login(user)
+        return redirect(f'/get_tweets/{form.twitter_handle.data}')
+    else:
+        return render_template("signup_form.html",form=form)
+
+@app.route('/login',methods=["GET","POST"])
+def do_login():
+    form=LoginUser()
+    if form.validate_on_submit():
+        user = User.authenticate(form.username.data,form.password.data)
+        login(user)
+        return redirect(f'/get_tweets/{form.twitter_handle.data}')
+    
+
+    return render_template("login.html",form=form)
+
+
+@app.route('/logout')
+def do_logout():
+    logout()
+    return redirect('/')
+
+@app.route('/get_tweets/<string:username>', methods=["GET","POST"])
+def urMusic(username):
+    if not g.user:
+        results="unauthorized"
+        render_template('results.html',music=results)
+    username
+    user_id=get_id(username)
     tweets=get_tweets(user_id)
 
-    # sentiments=[]
+    sentiments=[]
 
-    # for tweet in tweets:
-    #     sentiments.append("uno")
-    #     sentiment=google_sentiment_analysis(tweet['text'])
-    #     sentiments.append([sentiment.score, sentiment.magnitude])
+    for tweet in tweets:
+        # sentiments.append(tweet["text"])
+        sentiment=google_sentiment_analysis(tweet['text'])
+        # sentiments.append([sentiment.score, sentiment.magnitude])
+        sentiments.append(sentiment.score)
 
-    # focus_sentiment=get_focus_sentiment(sentiments)
+    focus_sentiment=round(get_focus_sentiment(sentiments),2)
 
-    # music= get_playlist(focus_sentiment)
+
+    music= get_playlist(focus_sentiment)
+
+    # recommended_music=[]
+    # for song in music:
+    #     recommended_music.append([song['artists'][0]['name'],song["name"]])
     # return music
-
-    return tweets
-
-def get_tweets(user_id):
-    bearer_token=twitter_bearer_token
-    header={"Authorization": "Bearer {}".format(bearer_token)}
-    # params={"max_results":10}
-    response=requests.request(
-        "GET",
-        "https://api.twitter.com/2/users/{}/tweets".format(user_id),
-        headers=header,
-        # params=params
-    )
-    tweets= response.json()["data"]
-    # return tweets
-    return json.dumps(tweets,indent=4,sort_keys=True)
-
-
+    
+    # return f"tweets:{tweets}"
+    if music is None:
+        results="music not found, currently working on improving algorithm for best results"
+        return render_template('results.html',music=results)
+    results=[music['artists'][0]['name'],music['name']]
+    return render_template('results.html',music=results)
+    # f"tweets:{tweets}, sentiments:{sentiments}, focus:{focus_sentiment}, music:{music['artists'][0]['name'],music['name']}"
 
 
 
