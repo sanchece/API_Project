@@ -1,5 +1,6 @@
 
 import base64
+from models import Playlist
 import requests
 import random
 
@@ -29,8 +30,84 @@ def get_token_for_spotify():
     result=requests.post(url,data=data, headers=headers)
     token=result.json()
     return token['access_token']
+def get_danceability(focus_sentiment):
+    return (focus_sentiment+1)/2
 
-def get_random_song(playlist_id):
+
+def get_playlist_from_sentiment(focus_sentiment):
+
+    if focus_sentiment==-1:
+        # Hardcore Punk Rock
+        return "7mCzIltN0jFQ54GH02HMsY"
+    elif focus_sentiment >-1 and focus_sentiment<=-0.9:
+        #Metal/ Hard Rock
+        return "1GXRoQWlxTNQiMNkOe7RqA"
+    elif focus_sentiment >-0.9 and focus_sentiment<=-0.8:
+        # Dream Pop
+        return "37i9dQZF1DX6uhsAfngvaD"
+    elif focus_sentiment >-0.8 and focus_sentiment<=-0.7:
+        # Indie Rock
+        return "7lnCgcTxLTTcOqvgoS80sC"
+    elif focus_sentiment >-0.7 and focus_sentiment<=-0.6:
+        # EDM
+        return "2e3dcRuo9uDH6qD3NOGKAL"
+    elif focus_sentiment >-0.6 and focus_sentiment<=-0.5:
+        # Alternative Rock
+        return "37i9dQZF1DX9GRpeH4CL0S"
+    elif focus_sentiment >-0.5 and focus_sentiment<=-0.4:
+        # R&B
+        return "37i9dQZF1DX4SBhb3fqCJd"
+    elif focus_sentiment >-0.4 and focus_sentiment<=-0.3:
+        # Blues
+        return "37i9dQZF1DXd9rSDyQguIk"
+    elif focus_sentiment >-0.3 and focus_sentiment<=-0.2:
+        # Indie Folk
+        return "5tOffZXVBFTMS7mkKQ3tpX"
+    elif focus_sentiment >-0.2 and focus_sentiment<=-0.1:
+        # country
+        return "37i9dQZF1DX13ZzXoot6Jc"
+    elif focus_sentiment >-0.1 and focus_sentiment<0.1:
+        # ambient
+        return "1kqBP6eE24L0agNpnTIKtc"
+    elif focus_sentiment >=0.1 and focus_sentiment<0.2:
+        # Classical
+        return "37i9dQZF1DWWEJlAGA9gs0"
+    elif focus_sentiment >=0.2 and focus_sentiment<0.3:
+        # Jazz
+        return "37i9dQZF1DXbITWG1ZJKYt"
+    elif focus_sentiment >=0.3 and focus_sentiment<0.4:
+        # Reggae
+        return "37i9dQZF1DXbSbnqxMTGx9"
+    elif focus_sentiment >=0.4 and focus_sentiment<0.5:
+        # Rap
+        return "37i9dQZF1DX0XUsuxWHRQd"
+    elif focus_sentiment >=0.5 and focus_sentiment<0.6:
+        # Love
+        return "5KbTzqKBqxQRD8OBtJTZrS"
+    elif focus_sentiment >=0.6 and focus_sentiment<0.7:
+        # Latino
+        return "37i9dQZF1DX10zKzsJ2jva"
+    elif focus_sentiment >=0.7 and focus_sentiment<0.8:
+        # Pop
+        return "37i9dQZF1DX2L0iB23Enbq"
+    elif focus_sentiment >=0.8 and focus_sentiment<0.9:
+        # Disco
+        return "37i9dQZF1DX2GKumqRIZ7g"
+    elif focus_sentiment >=0.9 and focus_sentiment<1:
+        # Funk
+        return "37i9dQZF1DWWvhKV4FBciw"
+    elif focus_sentiment ==1:
+        # Salsa
+        return "37i9dQZF1DX7SeoIaFyTmA"
+
+def determine_starting_playlists(focus_sentiment):
+    playlists=[]
+    # get playlists based on sentiment
+    focus_sentiments=[focus_sentiment-0.1,focus_sentiment,focus_sentiment+0.1]
+    for sentiment in focus_sentiments:
+        playlists.append(get_playlist_from_sentiment(sentiment))
+    return playlists
+def get_tracks(playlist_id):
     token= get_token_for_spotify()
     params={"market":"US","limit":10}
     headers={
@@ -38,66 +115,61 @@ def get_random_song(playlist_id):
     }
     url=f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks"
     response= requests.request("GET",url,headers=headers,params=params)
-    song=response.json()
-    rand=get_rand()
-    return song["items"][rand]["track"]["id"]
+    tracks=response.json()
+    return tracks
+def get_track_seed(tracks):
+    rand=random.randint(0,len(tracks["items"])-1)
+    track_seed=tracks["items"][rand]["track"]["id"]
+    return track_seed
+def get_artist_seed(tracks):
+    rand=random.randint(0,len(tracks["items"])-1)
+    artist_seed=tracks["items"][rand]["track"]["artists"][0]["id"]
+    return artist_seed
 
-def get_random_artist(playlist_id):
+
+def get_featured_playlists():
     token= get_token_for_spotify()
-
     params={"market":"US","limit":1}
     headers={
         "Authorization":"Bearer {}".format(token)
     }
-    url=f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks"
+    url=f"https://api.spotify.com/v1/browse/featured-playlists"
     response= requests.request("GET",url,headers=headers,params=params)
-    artist=response.json()
-    return artist["items"][0]["track"]["artists"][0]["id"]
+    ids=response.json()["playlists"]["items"]
+    featured_playlists=[]
+    for playlist in ids:
+        featured_playlists.append(playlist["id"])
+    return featured_playlists
+
+def get_urmusic(focus_sentiment):
+    track_seeds=[]
+    artist_seeds=[]
 
 
-def get_random_genre(artist_seed):
+    #get seeds from featured music in spotify (2)
+    featured_playlists=get_featured_playlists()
+    for playlist in featured_playlists:
+        list_of_tracks=get_tracks(playlist)
+        artist_seeds.append(get_artist_seed(list_of_tracks))
+        track_seeds.append(get_track_seed(list_of_tracks))
+
+    # get seeds from playlists determined by sentiment-genre conrrelation (3)
+    playlists=determine_starting_playlists(focus_sentiment)
+    for playlist in playlists:
+        list_of_tracks=get_tracks(playlist)
+        artist_seeds.append(get_artist_seed(list_of_tracks))
+        track_seeds.append(get_track_seed(list_of_tracks))
+
+    # return artist_seeds
+
     token= get_token_for_spotify()
-    artist_id=artist_seed
-    params={"ids":artist_id}
-    headers={
-        "Authorization":"Bearer {}".format(token)
-    }
-    url=f"https://api.spotify.com/v1/artists"
-    response= requests.request("GET",url,headers=headers,params=params)
-    genre=response.json()
-    return genre["artists"][0]["genres"]
-
-def get_starting_point_playlist(focus_sentiment):
-    if focus_sentiment >= -1 and focus_sentiment<-0.7:
-        return "7mCzIltN0jFQ54GH02HMsY"
-    elif focus_sentiment>=-0.7 and focus_sentiment<-0.4:
-        return "37i9dQZF1DX0XUsuxWHRQd"
-    elif focus_sentiment>=-0.4 and focus_sentiment<0:
-        return "4y3WX0SZQ2cTLBovftfyiP"
-    elif focus_sentiment>=0 and focus_sentiment<.4:
-        return "37i9dQZF1DWV7EzJMK2FUI"
-    elif focus_sentiment>=.4 and focus_sentiment<0.7:
-        return "7vI0tN3yUn07dkK9T6p2pg"
-    elif focus_sentiment>=0.7 and focus_sentiment<=1:
-        return "37i9dQZF1DXaqCgtv7ZR3L"
-
-def get_recommended_music(focus,playlist_id):
-    token= get_token_for_spotify()
-    track_seed=get_random_song(playlist_id)
-    track_seed2=get_random_song(playlist_id)
-
-    artist_seed=get_random_artist(playlist_id)
-    genre_seed=get_random_genre(artist_seed)
-
-
-    limit=10
-    target_danceability=(focus+1)/2
-
+    target_danceability=get_danceability(focus_sentiment)
+    
+    limit=20
     params={
         "limit":limit,
-        "seed_artists":[artist_seed],
-        "seed_genres":[genre_seed],
-        "seed_tracks":[track_seed,track_seed2],
+        "seed_artists":artist_seeds,
+        "seed_tracks":track_seeds,
         "market":"US",
         "target_danceability":target_danceability
         }
@@ -108,14 +180,9 @@ def get_recommended_music(focus,playlist_id):
     response= requests.request("GET",url,headers=headers,params=params)
     recommended=response.json()
     try:
-        results=recommended['tracks'][0]
+        results=recommended["tracks"]
         return results
     except:
         return None
 
-
-
-def get_playlist(focus_sentiment):
-    playlist_id=get_starting_point_playlist(focus_sentiment)
-    return get_recommended_music(focus_sentiment,playlist_id)
 

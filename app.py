@@ -1,6 +1,7 @@
 from flask import Flask,request,session, g, redirect
 from flask.templating import render_template
-from models import db, connect_db,User
+from requests.sessions import Session
+from models import db, connect_db,User,Playlist,Song,Playlist_Songs
 import requests
 import json
 from forms import AddUser, LoginUser
@@ -8,7 +9,7 @@ import os
 import requests
 from twitter_helper import get_tweets,get_id
 from google_helper import google_sentiment_analysis,get_focus_sentiment
-from spotify_helper import get_playlist
+from spotify_helper import get_urmusic, get_danceability
 
 
 app = Flask(__name__)
@@ -100,21 +101,43 @@ def urMusic(username):
         sentiments.append(sentiment.score)
 
     focus_sentiment=round(get_focus_sentiment(sentiments),2)
+    target_danceability=get_danceability(focus_sentiment)
+    music= get_urmusic(focus_sentiment)
+    new_playlist=Playlist(
+        sentiment=focus_sentiment,
+        danceability=target_danceability,
+        user_id=session[USER_KEY]
+    )
+    db.session.add(new_playlist)
+    db.session.commit()
+    recommended_music=[]
+    for track in music:
+        artist=track['artists'][0]['name']
+        track=track['name']
+        new_track=Song(
+            artist=artist,
+            title=track
+        )
+        db.session.add(new_track)
+        db.session.commit()
+        playlist_song_relationship=Playlist_Songs(
+            playlist_id=new_playlist.id,
+            song_id=new_track.id
+        )
+        db.session.add(playlist_song_relationship)
+        db.session.commit()
+        
 
+        recommended_music.append([track,artist])
 
-    music= get_playlist(focus_sentiment)
-
-    # recommended_music=[]
-    # for song in music:
-    #     recommended_music.append([song['artists'][0]['name'],song["name"]])
-    # return music
+ 
     
     # return f"tweets:{tweets}"
-    if music is None:
-        results="music not found, currently working on improving algorithm for best results"
-        return render_template('results.html',music=results)
-    results=[music['artists'][0]['name'],music['name']]
-    return render_template('results.html',music=results)
+    # if music is None:
+    #     results="music not found, currently working on improving algorithm for best results"
+    #     return render_template('results.html',music=results)
+    # results=[music['artists'][0]['name'],music['name']]
+    return render_template('results.html',music=recommended_music)
     # f"tweets:{tweets}, sentiments:{sentiments}, focus:{focus_sentiment}, music:{music['artists'][0]['name'],music['name']}"
 
 

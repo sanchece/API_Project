@@ -30,16 +30,48 @@ class User(db.Model):
         db.session.add(user)
         return user
 
+    @classmethod
+    def authenticate(cls, username, password):
+        user = cls.query.filter_by(username=username).first()
+
+        if user:
+            is_auth = bcrypt.check_password_hash(user.password, password)
+            if is_auth:
+                return user
+
+        return False
 
 class Playlist(db.Model):
-    """playlist"""
+    """playlists"""
     __tablename__="playlists"
     
-    PlaylistID=db.Column(db.Integer,primary_key=True,autoincrement=True)
-    Mood=db.Column(db.String,nullable=False)
-    UserID=db.Column(db.String)
+    id=db.Column(db.Integer,primary_key=True,autoincrement=True)
+    sentiment=db.Column(db.String,nullable=False)
+    danceability=db.Column(db.String,nullable=False)
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey('users.id', ondelete='CASCADE'),
+        nullable=False,
+    )
+    user = db.relationship('User')
+class Song(db.Model):
+    """songs"""
+    __tablename__="songs"
+    
+    id=db.Column(db.Integer,primary_key=True,autoincrement=True)
+    artist=db.Column(db.String,nullable=False)
+    title=db.Column(db.String,nullable=False)
 
-# class Songs(db.Model):
-#     """songs"""
-#     __tablename__="songs"
+class Playlist_Songs(db.Model):
+    __tablename__="playlistsongs"
+    id=db.Column(db.Integer,primary_key=True,autoincrement=True)
+    playlist_id=db.Column(
+        db.Integer,
+        db.ForeignKey('playlists.id', ondelete='CASCADE')
+    )
+    song_id=db.Column(
+        db.Integer,
+        db.ForeignKey('songs.id', ondelete='CASCADE')
+    )
+
 
