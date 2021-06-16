@@ -3,6 +3,45 @@
 
 {% block content %}
 
-{{music}}
+<div class="row justify-content-center">
+  <div class="col-md-7 col-lg-5">
+    <h2 class="join-message">{{username}} this is Ur Music </h2>
+    <p>Ur overall sentiment is: {{focus}}</p>
+  </div>
+
+  </div>
+    <div class="row justify-content-center">
+
+        {% set row = namespace(value=0) %}
+        {%for track in music%}
+        {%if row.value==0 %}
+        <div class="col m-0 p-0  ">
+        {% endif %}
+       
+        <div name={{row.value}} class="card bg-dark text-white">
+            <img class="card-img" src={{track[2]}} alt="Card image">
+            <div class="card-img-overlay">
+              <h5 class="card-title">{{track[0]}}</h5>
+              <p class="card-text">{{track[1]}}</p>
+            </div>
+        </div>
+
+
+        {% set row.value = row.value + 1 %}
+        {% if row.value==3%}
+      </div>
+        {%set row.value=0%}
+        {% endif %}
+
+        {% endfor %}
+    </div>
+
+
+
+    </div>
+</div>
+
+
+
 
 {% endblock %}

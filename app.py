@@ -19,8 +19,11 @@ app.config['SQLALCHEMY_ECHO'] = True
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', "it's a secret")
 
 connect_db(app)
+db.session.rollback()
 db.drop_all()
+db.session.rollback()
 db.create_all()
+db.session.rollback()
 
 USER_KEY="current_user"
 
@@ -46,7 +49,7 @@ def home():
     else:
         user= User.query.get_or_404(session[USER_KEY])
         
-        return redirect(f'/get_tweets/{user.twitter_handle}')
+        return redirect(f'/get_urmusic/{user.twitter_handle}')
 
 
 @app.route('/signup', methods=["GET","POST"])
@@ -62,7 +65,7 @@ def signup():
         )
         db.session.commit()
         login(user)
-        return redirect(f'/get_tweets/{form.twitter_handle.data}')
+        return redirect(f'/get_urmusic/{form.twitter_handle.data}')
     else:
         return render_template("signup_form.html",form=form)
 
@@ -72,7 +75,7 @@ def do_login():
     if form.validate_on_submit():
         user = User.authenticate(form.username.data,form.password.data)
         login(user)
-        return redirect(f'/get_tweets/{form.twitter_handle.data}')
+        return redirect(f'/get_tweets/{user.twitter_handle}')
     
 
     return render_template("login.html",form=form)
@@ -83,24 +86,28 @@ def do_logout():
     logout()
     return redirect('/')
 
-@app.route('/get_tweets/<string:username>', methods=["GET","POST"])
+@app.route('/get_urmusic/<string:username>', methods=["GET","POST"])
 def urMusic(username):
+
+    # return render_template('results.html',music="music")
     if not g.user:
         results="unauthorized"
         render_template('results.html',music=results)
-    username
     user_id=get_id(username)
-    tweets=get_tweets(user_id)
 
+    tweets=get_tweets(user_id)
+    # return f"{tweets}"
     sentiments=[]
 
     for tweet in tweets:
-        # sentiments.append(tweet["text"])
         sentiment=google_sentiment_analysis(tweet['text'])
-        # sentiments.append([sentiment.score, sentiment.magnitude])
         sentiments.append(sentiment.score)
-
+        # sentiments.append([sentiment.score,tweet['text']])
+    
+    # return f"{sentiments}"
     focus_sentiment=round(get_focus_sentiment(sentiments),2)
+    # return f'{[focus_sentiment,sentiments]}'
+
     target_danceability=get_danceability(focus_sentiment)
     music= get_urmusic(focus_sentiment)
     new_playlist=Playlist(
@@ -113,7 +120,10 @@ def urMusic(username):
     recommended_music=[]
     for track in music:
         artist=track['artists'][0]['name']
+        image=track['album']['images'][0]['url']
         track=track['name']
+        
+        # ['images'][0]['url']
         new_track=Song(
             artist=artist,
             title=track
@@ -126,19 +136,9 @@ def urMusic(username):
         )
         db.session.add(playlist_song_relationship)
         db.session.commit()
-        
+        recommended_music.append([track,artist,image])
 
-        recommended_music.append([track,artist])
-
- 
-    
-    # return f"tweets:{tweets}"
-    # if music is None:
-    #     results="music not found, currently working on improving algorithm for best results"
-    #     return render_template('results.html',music=results)
-    # results=[music['artists'][0]['name'],music['name']]
-    return render_template('results.html',music=recommended_music)
-    # f"tweets:{tweets}, sentiments:{sentiments}, focus:{focus_sentiment}, music:{music['artists'][0]['name'],music['name']}"
+    return render_template('results.html',music=recommended_music,focus=focus_sentiment,username=username)
 
 
 

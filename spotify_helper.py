@@ -1,24 +1,65 @@
-
 import base64
 from models import Playlist
 import requests
 import random
-
+import os
 
 def get_rand():
     return random.randint(0,10)
 
-
-
 # for spotify below
-clientId = ''
-clientSecret = ''
+clientId = os.environ.get('SPOTIFY_ID')
+clientSecret = os.environ.get('SPOTIFY_SECRET')
 
+
+def get_urmusic(focus_sentiment):
+    track_seeds=[]
+    artist_seeds=[]
+
+    playlists=determine_starting_playlists(focus_sentiment)
+    for playlist in playlists:
+        list_of_tracks=get_tracks(playlist)
+        artist_seeds.append(get_artist_seed(list_of_tracks))
+        track_seeds.append(get_track_seed(list_of_tracks))
+
+
+    featured_playlists=get_featured_playlists()
+    for playlist in featured_playlists:
+        list_of_tracks=get_tracks(playlist)
+        artist_seeds.append(get_artist_seed(list_of_tracks))
+        track_seeds.append(get_track_seed(list_of_tracks))
+
+    ur_music=get_request_urmusic(track_seeds,artist_seeds,focus_sentiment)
+    return ur_music
+
+    
+def get_request_urmusic(track_seeds,artist_seeds,focus_sentiment):
+    ur_music=[]
+    token= get_token_for_spotify()
+    target_danceability=get_danceability(focus_sentiment)
+    for track in range(len(track_seeds)):
+        limit=3
+        params={
+            "limit":limit,
+            "seed_artists":artist_seeds[track],
+            "seed_tracks":track_seeds[track],
+            "market":"US",
+            "target_danceability":target_danceability
+            }
+        headers={
+            "Authorization":"Bearer {}".format(token)
+        }
+        url=f"https://api.spotify.com/v1/recommendations"
+        response= requests.request("GET",url,headers=headers,params=params)
+        recommended=response.json()["tracks"]
+        for track in recommended:
+            ur_music.append(track)
+    
+    return ur_music
 
 def get_token_for_spotify():
     url="https://accounts.spotify.com/api/token"
     auth_str ='{}:{}'.format(clientId, clientSecret)
-
     headers={
         "Content-Type":"application/x-www-form-urlencoded",
         "Authorization":"Basic "+base64.urlsafe_b64encode(auth_str.encode()).decode(),
@@ -26,16 +67,13 @@ def get_token_for_spotify():
     data={
         'grant_type': 'client_credentials'
         }
-
     result=requests.post(url,data=data, headers=headers)
     token=result.json()
     return token['access_token']
 def get_danceability(focus_sentiment):
     return (focus_sentiment+1)/2
 
-
 def get_playlist_from_sentiment(focus_sentiment):
-
     if focus_sentiment==-1:
         # Hardcore Punk Rock
         return "7mCzIltN0jFQ54GH02HMsY"
@@ -103,7 +141,7 @@ def get_playlist_from_sentiment(focus_sentiment):
 def determine_starting_playlists(focus_sentiment):
     playlists=[]
     # get playlists based on sentiment
-    focus_sentiments=[focus_sentiment-0.1,focus_sentiment,focus_sentiment+0.1]
+    focus_sentiments=[focus_sentiment,focus_sentiment-0.1,focus_sentiment+0.1]
     for sentiment in focus_sentiments:
         playlists.append(get_playlist_from_sentiment(sentiment))
     return playlists
@@ -126,10 +164,9 @@ def get_artist_seed(tracks):
     artist_seed=tracks["items"][rand]["track"]["artists"][0]["id"]
     return artist_seed
 
-
 def get_featured_playlists():
     token= get_token_for_spotify()
-    params={"market":"US","limit":1}
+    params={"market":"US","limit":3}
     headers={
         "Authorization":"Bearer {}".format(token)
     }
@@ -140,49 +177,4 @@ def get_featured_playlists():
     for playlist in ids:
         featured_playlists.append(playlist["id"])
     return featured_playlists
-
-def get_urmusic(focus_sentiment):
-    track_seeds=[]
-    artist_seeds=[]
-
-
-    #get seeds from featured music in spotify (2)
-    featured_playlists=get_featured_playlists()
-    for playlist in featured_playlists:
-        list_of_tracks=get_tracks(playlist)
-        artist_seeds.append(get_artist_seed(list_of_tracks))
-        track_seeds.append(get_track_seed(list_of_tracks))
-
-    # get seeds from playlists determined by sentiment-genre conrrelation (3)
-    playlists=determine_starting_playlists(focus_sentiment)
-    for playlist in playlists:
-        list_of_tracks=get_tracks(playlist)
-        artist_seeds.append(get_artist_seed(list_of_tracks))
-        track_seeds.append(get_track_seed(list_of_tracks))
-
-    # return artist_seeds
-
-    token= get_token_for_spotify()
-    target_danceability=get_danceability(focus_sentiment)
-    
-    limit=20
-    params={
-        "limit":limit,
-        "seed_artists":artist_seeds,
-        "seed_tracks":track_seeds,
-        "market":"US",
-        "target_danceability":target_danceability
-        }
-    headers={
-        "Authorization":"Bearer {}".format(token)
-    }
-    url=f"https://api.spotify.com/v1/recommendations"
-    response= requests.request("GET",url,headers=headers,params=params)
-    recommended=response.json()
-    try:
-        results=recommended["tracks"]
-        return results
-    except:
-        return None
-
 

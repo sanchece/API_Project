@@ -1,0 +1,22 @@
+body{
+    color: white;
+}
+
+#logo{
+    padding-left:40pt;
+    padding-right:20pt;
+    
+} 
+
+.nav-item{
+    color:white;
+}
+a:hover{
+    background-color:white;
+    color:black;
+}
+
+.form-control, button{
+    margin-top: 10pt;
+}
+

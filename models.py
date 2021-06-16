@@ -18,6 +18,7 @@ class User(db.Model):
     email=db.Column(db.String,nullable=False)
     twitter_handle=db.Column(db.String,nullable=False)
 
+    playlists = db.relationship('Playlist', backref='users', cascade='all, delete')
     @classmethod
     def signup(cls, username,email,password,twitter_handle):
         bcrypted_pw= bcrypt.generate_password_hash(password).decode('UTF-8')
@@ -41,6 +42,13 @@ class User(db.Model):
 
         return False
 
+
+
+
+
+
+
+
 class Playlist(db.Model):
     """playlists"""
     __tablename__="playlists"
@@ -53,7 +61,7 @@ class Playlist(db.Model):
         db.ForeignKey('users.id', ondelete='CASCADE'),
         nullable=False,
     )
-    user = db.relationship('User')
+
 class Song(db.Model):
     """songs"""
     __tablename__="songs"
@@ -73,5 +81,6 @@ class Playlist_Songs(db.Model):
         db.Integer,
         db.ForeignKey('songs.id', ondelete='CASCADE')
     )
+
 
 
