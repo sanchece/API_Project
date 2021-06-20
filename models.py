@@ -54,6 +54,7 @@ class Playlist(db.Model):
     __tablename__="playlists"
     
     id=db.Column(db.Integer,primary_key=True,autoincrement=True)
+    name=db.Column(db.String,nullable=True,default="Not Named")
     sentiment=db.Column(db.String,nullable=False)
     danceability=db.Column(db.String,nullable=False)
     user_id = db.Column(
@@ -69,6 +70,8 @@ class Song(db.Model):
     id=db.Column(db.Integer,primary_key=True,autoincrement=True)
     artist=db.Column(db.String,nullable=False)
     title=db.Column(db.String,nullable=False)
+    spotify_id=db.Column(db.String)
+    spotify_image=db.Column(db.String)
 
 class Playlist_Songs(db.Model):
     __tablename__="playlistsongs"

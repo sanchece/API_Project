@@ -38,7 +38,7 @@ def get_request_urmusic(track_seeds,artist_seeds,focus_sentiment):
     token= get_token_for_spotify()
     target_danceability=get_danceability(focus_sentiment)
     for track in range(len(track_seeds)):
-        limit=3
+        limit=4
         params={
             "limit":limit,
             "seed_artists":artist_seeds[track],
@@ -104,12 +104,15 @@ def get_playlist_from_sentiment(focus_sentiment):
     elif focus_sentiment >-0.2 and focus_sentiment<=-0.1:
         # country
         return "37i9dQZF1DX13ZzXoot6Jc"
-    elif focus_sentiment >-0.1 and focus_sentiment<0.1:
-        # ambient
-        return "1kqBP6eE24L0agNpnTIKtc"
-    elif focus_sentiment >=0.1 and focus_sentiment<0.2:
+    elif focus_sentiment >-0.1 and focus_sentiment<=0:
         # Classical
         return "37i9dQZF1DWWEJlAGA9gs0"
+    elif focus_sentiment >0 and focus_sentiment<0.1:
+        # trance
+        return "37i9dQZF1DXbtYAdenGE9U"
+    elif focus_sentiment >=0.1 and focus_sentiment<0.2:
+        #mellow
+        return "37i9dQZF1DWTQwRw56TKNc"
     elif focus_sentiment >=0.2 and focus_sentiment<0.3:
         # Jazz
         return "37i9dQZF1DXbITWG1ZJKYt"

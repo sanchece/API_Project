@@ -7,8 +7,13 @@ class AddUser(FlaskForm):
     username = StringField('Username', validators=[DataRequired()])
     email = StringField('E-mail', validators=[DataRequired(), Email()])
     password = PasswordField('Password', validators=[Length(min=6)])
-    twitter_handle=StringField('Twitter@', validators=[DataRequired()])
+    twitter_handle=StringField('Twitter@ (do not include @)', validators=[DataRequired()])
 
 class LoginUser(FlaskForm):
     username = StringField('Username', validators=[DataRequired()])
     password = PasswordField('Password', validators=[Length(min=6)])
+
+class SavePlaylist(FlaskForm):
+    name = StringField('Name', validators=[DataRequired()])
+    
+

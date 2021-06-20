@@ -1,21 +1,28 @@
 
 {% extends 'base.html' %}
 
-
+{%block tabs%}
+<a class="center nav-item nav-link" href="/signup">Sign Up</a>
+<a class=" center nav-item nav-link" href="/login">Login</a>
+{%endblock%}
 {% block content %}
 
   <div class="row justify-content-md-center">
   <div class="col-md-7 col-lg-5">
-    <h2 class="join-message">Sign Up</h2>
+    <h2 class="center join-message">Sign Up</h2>
     <form method="POST" id="user_form">
       {{ form.hidden_tag() }}
 
       {% for field in form if field.widget.input_type != 'hidden' %}
-        {% for error in field.errors %}
-          <span class="text-danger">{{ error }}</span>
-        {% endfor %}
+
         {{ field(placeholder=field.label.text, class="form-control") }}
+        {% for error in field.errors %}
+        <span class="text-danger">{{ error }}</span>
       {% endfor %}
+      {% endfor %}
+      {% for msg in get_flashed_messages()%}
+      <span class="text-danger">{{ msg }}</span>
+      {% endfor%}
       <div class="col text-center">
         <button class="btn btn-warning btn-block">Sign me up!</button>
       </div>

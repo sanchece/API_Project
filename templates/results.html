@@ -1,31 +1,63 @@
 {% extends 'base.html' %}
+{%block tabs%}
+<a class="center nav-item nav-link" href="/logout">Logout</a>
+<a class="center nav-item nav-link" href="/ur_profile/{{user_id}}">Profile</a>
+{%endblock%}
 
 
 {% block content %}
 
-<div class="row justify-content-center">
-  <div class="col-md-7 col-lg-5">
-    <h2 class="join-message">{{username}} this is Ur Music </h2>
-    <p>Ur overall sentiment is: {{focus}}</p>
+<div id="overview" class="row justify-content-center text-light">
+  <div class="p-2 col-10 col-md-7 col-lg-5 ">
+    <h4 class="p-0 m-0 join-message center ">@{{username}} this is Ur Music </h4>
+    <div class="p-0 m-0 center">Ur overall sentiment is: {{focus}}</div>
+
+    
+       <form method="POST" action="/save_playlist/{{playlist_id}}">
+      {{ form.hidden_tag() }}
+
+      {% for field in form if field.widget.input_type != 'hidden' %}
+        {% for error in field.errors %}
+          <span class="text-danger">{{ error }}</span>
+        {% endfor %}
+        
+        {{ field(placeholder=field.label.text, class="form-control") }}
+      {% endfor %}
+      <div class="col text-center">
+        <button class="btn btn-warning btn-block button " >Save Name </button>
+        <a class="btn btn-warning btn-block button " href="/get_urmusic/{{username}}">Get New Playlist</a>
+      </div>
+      
+    </form>
+
+ 
+
   </div>
+
 
   </div>
     <div class="row justify-content-center">
 
         {% set row = namespace(value=0) %}
         {%for track in music%}
-        {%if row.value==0 %}
-        <div class="col m-0 p-0  ">
-        {% endif %}
-       
-        <div name={{row.value}} class="card bg-dark text-white">
-            <img class="card-img" src={{track[2]}} alt="Card image">
-            <div class="card-img-overlay">
-              <h5 class="card-title">{{track[0]}}</h5>
-              <p class="card-text">{{track[1]}}</p>
-            </div>
-        </div>
 
+        {%if row.value==0 %}
+        <div  class="col-md-6 col-md-4 col-lg-3 m-0 p-0  ">
+        {% endif %}
+
+        <div name={{row.value}} class="card bg-dark text-white">
+            <img  class="card-img" src={{track[2]}} alt="Card image">
+     
+            <iframe
+            src="https://open.spotify.com/embed/track/{{track[3]}}"
+            width="100%"
+            height="85px"
+            frameborder="0"
+            allowtransparency="true"
+            allow="encrypted-media"
+            ></iframe>
+        </div>
+   
 
         {% set row.value = row.value + 1 %}
         {% if row.value==3%}

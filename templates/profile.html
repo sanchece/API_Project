@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{%block tabs%}
+<a class="center nav-item nav-link" href="/logout">Logout</a>
+<a class="center nav-item nav-link" href="/ur_profile/{{user_id}}">Profile</a>
+{%endblock%}
+
+
+{% block content %}
+
+<!-- {{playlists}} -->
+
+
+<div id="overview" class="row justify-content-center text-light">
+    <div class="p-2 col-10 col-md-7 col-lg-5 ">
+      <h4 class="p-0 m-0 join-message center ">@{{username}} this is Ur Profile </h4>
+      <div class="p-0 m-0 center">Select one of your playlist</div>
+      
+    </div>
+</div>
+
+
+<div class="container">
+    <div class="row">
+        <div class="col">
+        <div class="list-group">
+            {%for playlist in playlists%}
+
+            <a href="/get_playlist/{{playlist.id}}"  class="center list-group-item list-group-item-action">{{playlist.name}}</a>
+            {%endfor%}
+          </div>
+          </div>
+          </div>
+
+</div>
+<div class="col text-center">
+    <a class="btn btn-warning btn-block button " href="/get_urmusic/{{username}}">Get New Playlist</a>
+  </div>
+  
+source venv
+{% endblock %}

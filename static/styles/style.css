@@ -5,18 +5,64 @@ body{
 #logo{
     padding-left:40pt;
     padding-right:20pt;
+    color:white;
     
 } 
 
-.nav-item{
+.nav-item,.burger{
     color:white;
-}
-a:hover{
-    background-color:white;
-    color:black;
+    border-color: white;
 }
 
 .form-control, button{
     margin-top: 10pt;
 }
 
+#track{
+    height: 70px;
+}
+
+#overview{
+    /* background-color: #292b2c;  */
+    /* background-image: linear-gradient(#292b2c, coral); */
+    border:none;
+}
+
+.center{
+    text-align: center;
+}
+
+.no-border{
+    border:none;
+    padding-right:25px;
+    margin:0;
+}
+a:hover{
+    background-color:coral;
+
+}
+
+.list-group-item:hover{
+    background-color:coral;
+    
+
+}
+
+.btn-warning{
+    background-color: grey;
+    color:white;
+    border:none;
+}
+.btn-warning:hover{
+    background-color: coral;
+
+}
+
+
+
+.button{
+    padding:5px;
+    margin:5px;
+    height:40px;
+    width:150px;
+}
