@@ -14,8 +14,8 @@ from spotify_helper import get_urmusic, get_danceability
 
 app = Flask(__name__)
 
-# app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'postgresql:///urmusic')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL').replace("://", "ql://", 1)
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'postgresql:///urmusic')
+# app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL').replace("://", "ql://", 1)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ECHO'] = True
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', "it's a secret")
@@ -117,8 +117,6 @@ def do_logout():
 
 @app.route('/get_urmusic/<string:username>', methods=["GET","POST"])
 def urMusic(username):
-
-    # return render_template('results.html',music="music")
     if not g.user:
         results="unauthorized"
         render_template('results.html',music=results)
@@ -128,18 +126,14 @@ def urMusic(username):
     try:
         user_twitter_id=get_id(username)
         tweets=get_tweets(user_twitter_id)
-        # return f"{tweets}"
         sentiments=[]
     
         for tweet in tweets:
             sentiment=google_sentiment_analysis(tweet['text'])
-            # sentiments.append(sentiment)
             sentiments.append(sentiment.score)
     
     
-        # return f"{sentiments}"
         focus_sentiment=round(get_focus_sentiment(sentiments),2)
-        # return f'{[focus_sentiment,sentiments]}'
     
         target_danceability=get_danceability(focus_sentiment)
         music= get_urmusic(focus_sentiment)

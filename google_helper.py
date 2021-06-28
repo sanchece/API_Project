@@ -1,10 +1,6 @@
 
 from statistics import mean
 
-
-# def google_sentiment_analysis(tweet):
-#     return .7
-
 from google.cloud import language_v1
 import os
 credential_path = 'saf.py'
@@ -17,6 +13,5 @@ def google_sentiment_analysis(tweet):
     return sentiment
 
 def get_focus_sentiment(sentiments):
-    # currently working on better algorithm to extract focus sentiment from extracted tweets
     focus_sentiment=mean(sentiments)
     return focus_sentiment
