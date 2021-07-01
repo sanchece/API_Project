@@ -13,10 +13,11 @@ class User(db.Model):
     __tablename__="users"
     
     id=db.Column(db.Integer,primary_key=True,autoincrement=True)
-    username=db.Column(db.String,nullable=False)
+    username=db.Column(db.String,nullable=False,unique=True)
     password=db.Column(db.String,nullable=False)
     email=db.Column(db.String,nullable=False)
     twitter_handle=db.Column(db.String,nullable=False)
+
 
     playlists = db.relationship('Playlist', backref='users', cascade='all, delete')
     @classmethod
@@ -41,11 +42,6 @@ class User(db.Model):
                 return user
 
         return False
-
-
-
-
-
 
 
 
